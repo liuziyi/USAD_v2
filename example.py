@@ -117,9 +117,9 @@ def main():
             with open(os.path.join(config.result_dir, f'{i}/{config.test_score_filename}'), 'wb') as file:
                 pickle.dump(test_score, file)
 
-        # get threshold
-        # 超过threshold的为异常，低于的为正常。用y_test和test_score计算分数并画图
-        threshold = get_threshold(y_test, test_score)
+        # m = [f1, precision, recall, TP, TN, FP, FN, latency]
+        # 超过threshold的为异常，低于的为正常。待用m和threshold画图
+        m, threshold = bf_search(test_score, y_test, 0, 1, 10000, 100)
         with open(os.path.join(config.result_dir, f'{i}/{config.threshold_filename}'), 'w') as file:
             file.write(str(threshold))
 
