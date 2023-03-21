@@ -119,9 +119,11 @@ def main():
 
         # m = [f1, precision, recall, TP, TN, FP, FN, latency]
         # 超过threshold的为异常，低于的为正常。待用m和threshold画图
-        m, threshold = bf_search(test_score, y_test, 0, 1, 10000, 100)
+        m, threshold = bf_search(test_score, y_test, 0, 1, 10000, 2000)
         with open(os.path.join(config.result_dir, f'{i}/{config.threshold_filename}'), 'w') as file:
             file.write(str(threshold))
+        with open(os.path.join(config.result_dir, f'{i}/score'), 'w') as file:
+            file.write(str(m))
 
     print(f'总训练耗时: {total_fit}, 总预测耗时: {total_predict}')
 
