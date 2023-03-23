@@ -83,11 +83,21 @@ def sampling_data_prep(method, X_train, y_train):
 
     return x, y
 
+#删除异常值
+def remove_outliers(col_name, dataset):
+    col_value = dataset[col_name].values
+    q25, q75 = np.percentile(col_value, 25), np.percentile(col_value, 75)
+    iqr = q75 - q25
+    cut_off = iqr * 10
+    lower, upper = q25 - cut_off, q75 + cut_off
+    outliers = [x for x in col_value if x < lower or x > upper]
+    total = len(outliers)
+    dataset = dataset.drop(dataset[(dataset[col_name] > upper) | (dataset[col_name] < lower)].index)
+    return dataset, total
 
 def main():
     """# Import data"""
-
-    data = pd.read_csv('data/creditcard.csv')
+    #data = pd.read_csv('data/creditcard.csv' sep = ',')
     data["Time"] = data["Time"].apply(lambda x: x / 3600 % 24)
 
     data.head()
@@ -98,18 +108,23 @@ def main():
 
     nf = data[data['Class'] == 0].sample(492 * 9, replace=True)
     f = data[data['Class'] == 1]
+    col_names = list(data.columns)
+    x_names = list(data.columns)
+    x_names.remove('Class')
+
+
     df = nf.append(f).sample(frac=1).reset_index(drop=True)
     X = df.drop(['Class'], axis=1).values
     Y = df["Class"].values
 
     # train test split
     X_train, X_test, Y_train, y_test = train_test_split(X, Y, test_size=0.2, random_state=42)
+    
 
     total_fit = 0
     total_predict = 0
 
     entities = 1
-    
     #采样方式名称
     sample_name = ['tomeklink', 'smote', 'adasyn', 'randomover', 'combine_over_and_under_sampling', 'nonsampling']
     i = 0
@@ -121,18 +136,31 @@ def main():
     sampling_test_score = []
     sampling_m = []
     sampling_threshold = []
-    
-    
-    #最终训练集x_train, y_train,测试集x_test, y_test 都是小写
+
     for name in sample_name:
         
         x_train, y_train = sampling_data_prep(name, X_train, Y_train)
+
+        dataDf = pd.DataFrame(x_train)
+        dataDf.insert(30, 'Class', y_train)
+        dataDf.columns = col_names
+
+        total_outliers = 0
+        for x_name in x_names:
+            dataDf, number = remove_outliers(x_name,dataDf)
+            total_outliers += number
+
+        x_train = dataDf.drop(['Class'], axis=1).values
+        y_train = dataDf['Class'].values
+
+        print("total ourliers: {}".format(total_outliers))
 
         # init model
         model = USAD(x_dims=config.x_dims[config.dataset], max_epochs=config.max_epochs[config.dataset],
                      batch_size=config.batch_size, z_dims=config.z_dims,
                      window_size=config.window_size[config.dataset],
                      valid_step_frep=config.valid_step_freq)
+
 
         # restore model
         if config.restore_dir:
@@ -186,13 +214,13 @@ def main():
             file.write(str(threshold))
         with open(os.path.join(config.result_dir, f'{i}/score'), 'w') as file:
             file.write(str(m))
-            
+
         sampling_m.append(m)
         sampling_threshold.append(threshold)
-    
-    i+=1
-    print(f'\n总训练耗时: {total_fit}, 总预测耗时: {total_predict}')
-   
+
+    i += 1
+    print(f'总训练耗时: {total_fit}, 总预测耗时: {total_predict}')
+
     j = 0
     print("\n")
     for name in sample_name:
@@ -206,5 +234,8 @@ def main():
 
 
 if __name__ == '__main__':
+    # get config
+    config = ConfigHandler().config
+    print('Configuration:')
     print(config)
     main()
