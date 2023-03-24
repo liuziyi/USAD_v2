@@ -97,7 +97,7 @@ def remove_outliers(col_name, dataset):
 
 def main():
     """# Import data"""
-    #data = pd.read_csv('data/creditcard.csv' sep = ',')
+    data = pd.read_csv('data/creditcard.csv' sep = ',')
     data["Time"] = data["Time"].apply(lambda x: x / 3600 % 24)
 
     data.head()
@@ -106,7 +106,7 @@ def main():
 
     """# Preparation"""
 
-    nf = data[data['Class'] == 0].sample(492 * 9, replace=True)
+    nf = data[data['Class'] == 0].sample(492 * 9, replace=True, random_state=42)
     f = data[data['Class'] == 1]
     col_names = list(data.columns)
     x_names = list(data.columns)
